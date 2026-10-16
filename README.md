@@ -13,8 +13,15 @@ speaker in colors that read from the back of the room:
 
 **Use it online:** https://zevahcle.github.io/session-countdown/
 
-**Use it offline:** download [`index.html`](index.html) and open it in any
-browser. It is one file with no network dependencies.
+**Install it as an app.** Once installed it has its own icon, opens full
+screen without the browser bars, and works with no connection:
+
+- Chrome or Edge, desktop or Android: the **Install app** button on the clock,
+  or the install icon in the address bar.
+- iPhone or iPad: open the link in Safari, then Share › Add to Home Screen.
+
+**Or keep a single file:** download [`index.html`](index.html) and open it in
+any browser. It needs nothing else to run.
 
 ![The clock before starting a 25-minute slot](screenshot.png)
 
@@ -33,7 +40,16 @@ Keyboard: Space starts or pauses, R resets, ↑ and ↓ add or remove a minute,
 F toggles full screen.
 
 The clock keeps running across a page reload, and it asks the browser to keep
-the screen awake while it runs.
+the screen awake while it runs. The browser bar (and a phone's status bar)
+takes the color of the current phase.
+
+## Files
+
+| File | What it is |
+|---|---|
+| `index.html` | the whole clock |
+| `manifest.webmanifest`, `sw.js` | what makes it installable and offline |
+| `icon*.png`, `icon.svg`, `apple-touch-icon.png` | app icons, drawn by `tools/icons.py` |
 
 ## License
 

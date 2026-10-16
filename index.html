@@ -3,6 +3,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Session Countdown</title>
+<meta name="description" content="Full-screen countdown for conference talk slots: green, then yellow for the talk, red for questions.">
+<meta name="theme-color" content="#1F5FA8" id="theme">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Countdown">
 <style>
   :root {
     color-scheme: dark;
@@ -53,8 +62,11 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto auto;
     gap: clamp(8px, 1.6vh, 18px);
-    padding-inline: clamp(16px, 3vw, 48px);
-    padding-block: clamp(12px, 2.4vh, 32px);
+    /* clear of notches and system bars when running as an installed app */
+    padding-top: calc(clamp(12px, 2.4vh, 32px) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(clamp(12px, 2.4vh, 32px) + env(safe-area-inset-bottom, 0px));
+    padding-left: max(clamp(16px, 3vw, 48px), env(safe-area-inset-left, 0px));
+    padding-right: max(clamp(16px, 3vw, 48px), env(safe-area-inset-right, 0px));
   }
 
   .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 24px; }
@@ -131,6 +143,7 @@
     <button type="submit" id="go" class="primary">Start</button>
     <button type="button" id="reset">Reset</button>
     <button type="button" id="full">Full screen</button>
+    <button type="button" id="install" hidden>Install app</button>
   </form>
   <p class="keys">Space start / pause · R reset · ↑ ↓ one minute more or less · F full screen</p>
 </main>
@@ -191,10 +204,15 @@
     clock.style.fontSize = fs.toFixed(1) + 'px';
   }
 
-  let lastText = '', lastLen = 0;
+  // the browser bar and the phone's status bar take the phase color too
+  const THEME = { ready: '#1F5FA8', talk: '#1D7646', yellow: '#F4C430', questions: '#B4233A', over: '#B4233A' };
+  const themeMeta = $('theme');
+
+  let lastText = '', lastLen = 0, lastPhase = '';
   function render() {
     const r = remaining(), [p, t] = view(r);
     root.dataset.phase = p;
+    if (p !== lastPhase) { lastPhase = p; themeMeta.setAttribute('content', THEME[p]); }
     root.dataset.paused = String(S.state === 'paused');
     if (t !== lastText) {
       clock.textContent = t; lastText = t;
@@ -328,6 +346,23 @@
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') { if (S.state === 'running') lock(); render(); }
   });
+
+  // installing: Chrome and Edge offer it through this button; Safari through Share › Add to Home Screen
+  let installPrompt = null;
+  const installBtn = $('install');
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; installBtn.hidden = false; });
+  installBtn.addEventListener('click', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    try { await installPrompt.userChoice; } catch (e) {}
+    installPrompt = null; installBtn.hidden = true;
+  });
+  addEventListener('appinstalled', () => { installPrompt = null; installBtn.hidden = true; });
+
+  // offline support when served from a web address; opened as a file it simply runs without it
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
 
   if (S.state === 'ready') S.left = total();
   render(); fit();
